@@ -12,7 +12,9 @@ const int faultTemp = 0;        // Погрешность температору
 const int buttonUp = 8;
 const int buttonDown = 10;
 const int buttonOk = 9;
+const int GSensorPin = A1;
 
+unsigned long int timeGsensor = 0;
 
 int SoldertempRead = 0;
 int tempreal = 0;
@@ -20,9 +22,9 @@ int incomingByte = 0;
 int setTemp = 180;
 int flag = 0;
 int solder = 0;
-
+int gSensorVal = 0;
 int SetTemp = 180;
-
+//char savemode = "";
 int i = 0;                // loop count 
 
 int addrEeprom = 0;
@@ -32,8 +34,8 @@ float Solderkp = 2.0;
 float Solderki = 0.4;
 float Solderkd = 0.1;
 //подключаем PID.
-double SolderSetpoint, SolderInput, SolderOutput;
-PID SolderPID(&SolderInput, &SolderOutput, &SolderSetpoint, Solderkp, Solderki, Solderkd, DIRECT);
+double SolderSetpoint, SolderInput, SolderOutput, SolderSetpoint2;
+PID SolderPID(&SolderInput, &SolderOutput, &SolderSetpoint2, Solderkp, Solderki, Solderkd, DIRECT);
 
 
 // Экран
@@ -70,6 +72,10 @@ void setup() {
   
   pinMode(buttonDown, INPUT);
   digitalWrite(buttonUp, HIGH);
+
+  pinMode(GSensorPin, INPUT);
+  digitalWrite(GSensorPin, HIGH);
+
   
   display.begin();
   display.setContrast(50); //Ajusta o contraste do display
@@ -90,7 +96,7 @@ void setup() {
   delay(100);
 
 SolderSetpoint = EEPROM.read(addrEeprom) * 4;
-
+SolderSetpoint2 = EEPROM.read(addrEeprom) * 4;
 }
 
 
@@ -142,15 +148,33 @@ int getRealTemp(int temp){
 
 
 Sensors SolderSensor(heaterSensorPin, 32);
+Sensors GSensorsValues(GSensorPin, 16);
+
+int timer(int sensor, int temp){
+  int result;  
+  //int saveValue = temp;
+  if(timeGsensor == 1000 and sensor>512){
+      
+      result = temp/1.2; // уменьшаем температуру после простоя
+    }else if(sensor < 512 ){
+      result = temp;  
+      timeGsensor = 0;
+    }else{
+      result = temp;
+      timeGsensor = timeGsensor +1;
+    }
+    return round(result);
+  
+  }
 
 
 void loop() {
-
+      
       SoldertempRead = SolderSensor.getOversampled();
 //      tempRead = analogRead(heaterSensorPin);    
       tempreal = getRealTemp(SoldertempRead);
-
-
+      gSensorVal = GSensorsValues.getOversampled();
+      SolderSetpoint2 = timer(gSensorVal, SolderSetpoint);
       if (Serial.available() > 0) {
                     // read the incoming byte:
                     incomingByte = Serial.read();
@@ -259,17 +283,22 @@ void loop() {
       
       if (++i == 100) { // print debug info every 100th loop 
         i = 0;
+        
         Serial.print("Heater: ");
         Serial.print(SoldertempRead);
         Serial.print(", PID: ");
         Serial.print(SolderOutput);
         Serial.print(", Temp Real: ");
         Serial.println(tempreal);
+        Serial.print(", GSensor: ");
+        Serial.println(gSensorVal);
     //    Serial.print(";, ");
     //    Serial.print(heaterSensorResistance, 4);
  
       }
+      
 
+      
       int displaySolderSetpoint = SolderSetpoint;
       display.clearDisplay();
       display.clearDisplay();   //Apaga o buffer e o display
@@ -277,9 +306,14 @@ void loop() {
       display.setTextColor(BLACK); //Seta a cor do texto
       display.setCursor(0,0);  //Seta a posição do cursor
       display.print("Heater: "); 
-      display.println(SoldertempRead); 
+      display.print(SoldertempRead); 
+      display.print(" ");
+      if(SolderSetpoint2 < displaySolderSetpoint){
+      display.print("s");
+      }
+      display.println();
       display.print("PID: "); 
-      display.println(SolderOutput); 
+      display.println(SolderOutput, 0); 
       display.println("Temp Real:");
       
       display.setTextSize(2); 
