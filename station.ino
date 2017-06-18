@@ -1,6 +1,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
 #include <PID_v1.h>
+#include <EEPROM.h>
 
 // Pinout
 const int heaterSensorPin = A0; // Пин куда подключен выход с ОУ
@@ -24,6 +25,7 @@ int SetTemp = 180;
 
 int i = 0;                // loop count 
 
+int addrEeprom = 0;
 
 //задаем начальные значения для pid регулятора
 float Solderkp = 2.0;
@@ -87,7 +89,7 @@ void setup() {
   display.display();
   delay(100);
 
-SolderSetpoint = 200;
+SolderSetpoint = EEPROM.read(addrEeprom);
 
 }
 
@@ -160,10 +162,8 @@ void loop() {
                               Serial.println("Solder OFF");
                               break;
                           case 49:
-                              SolderInput = tempreal;
-                              SolderSetpoint = 100;
-                              SolderPID.SetMode(AUTOMATIC);
-                              Serial.println("Solder ON 100");
+                              EEPROM.write(addrEeprom, 200);
+                              Serial.println("eeprom write");
                               break;
 
                           case 50:
@@ -238,11 +238,13 @@ void loop() {
 
       if(digitalRead(buttonUp)==LOW){
         SolderSetpoint = SolderSetpoint + 1;
+        EEPROM.write(addrEeprom, SolderSetpoint);
         delay(200);
         }
 
       if(digitalRead(buttonDown)==LOW){
         SolderSetpoint = SolderSetpoint - 1;
+        EEPROM.write(addrEeprom, SolderSetpoint);
         delay(200);
         }
 
