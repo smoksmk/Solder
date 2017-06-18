@@ -89,7 +89,7 @@ void setup() {
   display.display();
   delay(100);
 
-SolderSetpoint = EEPROM.read(addrEeprom);
+SolderSetpoint = EEPROM.read(addrEeprom) * 4;
 
 }
 
@@ -235,16 +235,21 @@ void loop() {
          } 
 
       // задаем температуру
+      if (SolderSetpoint>512){
+          SolderSetpoint= 0;
+          EEPROM.write(addrEeprom, SolderSetpoint);
+        }
+
 
       if(digitalRead(buttonUp)==LOW){
         SolderSetpoint = SolderSetpoint + 1;
-        EEPROM.write(addrEeprom, SolderSetpoint);
+        EEPROM.write(addrEeprom, SolderSetpoint / 4);
         delay(200);
         }
 
       if(digitalRead(buttonDown)==LOW){
         SolderSetpoint = SolderSetpoint - 1;
-        EEPROM.write(addrEeprom, SolderSetpoint);
+        EEPROM.write(addrEeprom, SolderSetpoint / 4);
         delay(200);
         }
 
