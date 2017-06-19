@@ -3,6 +3,7 @@
 #include <PID_v1.h>
 #include <EEPROM.h>
 
+
 // Pinout
 const int heaterSensorPin = A0; // Пин куда подключен выход с ОУ
 const int SolderMosfetPin = 11;       // Пин куда подключен выход на пояльник
